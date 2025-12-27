@@ -372,7 +372,10 @@ static void set_time_start(struct lrc_line *lrc_line, long time_start)
     time_start -= time_start%10;
     if (lrc_line->time_start != time_start)
     {
-        lrc_line->time_start = time_start;
+        int offset = time_start - lrc_line->time_start;
+        for (; lrc_line; lrc_line = lrc_line->next)
+            lrc_line->time_start += offset;
+
         current.changed_lrc = true;
     }
 }
