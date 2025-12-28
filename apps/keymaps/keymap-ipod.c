@@ -173,6 +173,7 @@ static const struct button_mapping button_context_keyboard[]  = {
     { ACTION_KBD_DOWN,         BUTTON_SCROLL_FWD|BUTTON_REPEAT,       BUTTON_NONE },
     { ACTION_KBD_MORSE_INPUT,  BUTTON_MENU|BUTTON_REPEAT,             BUTTON_MENU },
     { ACTION_KBD_MORSE_SELECT, BUTTON_SELECT|BUTTON_REL,              BUTTON_NONE },
+    { ACTION_KBD_MORSE_UPCASE, BUTTON_LEFT|BUTTON_RIGHT,              BUTTON_NONE },
     LAST_ITEM_IN_LIST
 }; /* button_context_keyboard */
 

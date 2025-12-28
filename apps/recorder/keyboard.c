@@ -133,6 +133,7 @@ struct edit_state
     bool morse_mode;
     bool morse_reading;
     unsigned char morse_code;
+    bool morse_upcase;
     int morse_tick;
 #endif
     int changed;
@@ -440,6 +441,7 @@ int kbd_input(char* text, int buflen, ucschar_t *kbd)
 #ifdef HAVE_MORSE_INPUT
     state.morse_mode = global_settings.morse_input;
     state.morse_reading = false;
+    state.morse_upcase = false;
 #endif
     state.hangul = false;
     state.changed = 0;
@@ -675,6 +677,13 @@ int kbd_input(char* text, int buflen, ucschar_t *kbd)
                 if (button == ACTION_KBD_MORSE_DASH)
                     state.morse_code |= 0x01;
 
+                break;
+            case ACTION_KBD_MORSE_UPCASE:
+                if (!state.morse_mode)
+                    break;
+
+                state.morse_upcase = !state.morse_upcase;
+                state.morse_reading = false;
                 break;
             case ACTION_KBD_MORSE_SELECT:
                 if (state.morse_mode && state.morse_reading)
@@ -985,10 +994,14 @@ static void kbd_draw_picker(struct keyboard_parameters *pm,
 
         /* Draw morse code table with code descriptions. */
         for (i = 0; morse_alphabets[i] != '\0'; i++) {
-            int morse_code;
-            outline[0] = morse_alphabets[i];
+            char ch = morse_alphabets[i];
+
+            if (state->morse_upcase && ch >= 'a' && ch <= 'z')
+                ch -= 'a' - 'A';
+            outline[0] = ch;
             sc->putsxy(x, y, outline);
-            morse_code = morse_codes[i];
+
+            int morse_code = morse_codes[i];
             for (j = 0; morse_code > 0x01; morse_code >>= 1) {
                 j++;
             }
@@ -1486,20 +1499,27 @@ void kdb_handle_morse_finish(struct edit_state *state) {
     logf("Morse: 0x%02x", state.morse_code);
     state->morse_reading = false;
 
+    char ch = '\0';
+
     for (j = 0; morse_alphabets[j] != '\0'; j++)
     {
-        if (morse_codes[j] == state->morse_code)
+        if (morse_codes[j] == state->morse_code) {
+            ch = morse_alphabets[j];
             break;
+        }
     }
 
-    if (morse_alphabets[j] == '\0')
+    if (ch == '\0')
     {
         logf("Morse code not found");
         return;
     }
 
+    if (state->morse_upcase && ch >= 'a' && ch <= 'z')
+        ch -= 'a' - 'A';
+
     /* turn off hangul input */
     state->hangul = false;
-    kbd_inschar(state, morse_alphabets[j]);
+    kbd_inschar(state, ch);
 }
 #endif /* HAVE_MORSE_INPUT */

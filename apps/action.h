@@ -296,6 +296,7 @@ enum {
     ACTION_KBD_MORSE_SELECT,
     ACTION_KBD_MORSE_DOT,
     ACTION_KBD_MORSE_DASH,
+    ACTION_KBD_MORSE_UPCASE,
 
 #ifdef HAVE_TOUCHSCREEN
     /* the following are helper actions for touchscreen targets,
