@@ -659,7 +659,22 @@ int kbd_input(char* text, int buflen, ucschar_t *kbd)
                 }
                 break;
 #endif /* KBD_TOGGLE_INPUT */
+            case ACTION_KBD_MORSE_DOT:
+            case ACTION_KBD_MORSE_DASH:
+                if (!state.morse_mode)
+                    break;
 
+                if (!state.morse_reading)
+                {
+                    state.morse_reading = true;
+                    state.morse_code = 1;
+                }
+
+                state.morse_code <<= 1;
+                if (button == ACTION_KBD_MORSE_DASH)
+                    state.morse_code |= 0x01;
+
+                break;
             case ACTION_KBD_MORSE_SELECT:
                 if (state.morse_mode && state.morse_reading)
                 {
