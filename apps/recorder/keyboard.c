@@ -405,6 +405,7 @@ static void kbd_move_picker_horizontal(struct keyboard_parameters *pm,
                                        struct edit_state *state, int dir);
 static void kbd_move_picker_vertical(struct keyboard_parameters *pm,
                                      struct edit_state *state, int dir);
+static void kdb_handle_morse_finish(struct edit_state *state);
 
 int kbd_input(char* text, int buflen, ucschar_t *kbd)
 {
@@ -684,7 +685,6 @@ int kbd_input(char* text, int buflen, ucschar_t *kbd)
                 }
                 break;
 #endif /* HAVE_MORSE_INPUT */
-
             case ACTION_KBD_SELECT:
                 /* select doubles as backspace in line_edit */
                 if (pm->line_edit)
@@ -707,44 +707,35 @@ int kbd_input(char* text, int buflen, ucschar_t *kbd)
                 break;
 
             case ACTION_KBD_BACKSPACE:
+                if (state.morse_reading) {
+                    state.morse_code=0;
+                    state.morse_reading=false;
+                    break;
+                }
+
                 kbd_backspace(&state);
                 break;
 
             case ACTION_KBD_CURSOR_RIGHT:
+                if (state.morse_reading)
+                    break;
+
                 kbd_move_cursor(&state, 1);
                 break;
 
             case ACTION_KBD_CURSOR_LEFT:
+                if (state.morse_reading)
+                    break;
+
                 kbd_move_cursor(&state, -1);
                 break;
 
             case ACTION_NONE:
 #ifdef HAVE_MORSE_INPUT
                 if (state.morse_reading)
-                {
-                    int j;
-                    logf("Morse: 0x%02x", state.morse_code);
-                    state.morse_reading = false;
-
-                    for (j = 0; morse_alphabets[j] != '\0'; j++)
-                    {
-                        if (morse_codes[j] == state.morse_code)
-                            break ;
-                    }
-
-                    if (morse_alphabets[j] == '\0')
-                    {
-                        logf("Morse code not found");
-                        break ;
-                    }
-
-                    /* turn off hangul input */
-                    state.hangul = false;
-                    kbd_inschar(&state, morse_alphabets[j]);
-                }
+                    kdb_handle_morse_finish(&state);
 #endif /* HAVE_MORSE_INPUT */
                 break;
-
             default:
                 if (default_event_handler(button) == SYS_USB_CONNECTED)
                 {
@@ -754,6 +745,10 @@ int kbd_input(char* text, int buflen, ucschar_t *kbd)
                 break;
 
         } /* end switch */
+
+        // 0x80 is maximum code. So, let's handle if we over it
+        if (state.morse_reading && state.morse_code >= 0x80)
+            kdb_handle_morse_finish(&state);
 
         if (button != ACTION_NONE)
         {
@@ -1484,3 +1479,27 @@ static void kbd_move_picker_vertical(struct keyboard_parameters *pm,
         pm->line_edit = true;
     }
 }
+
+#ifdef HAVE_MORSE_INPUT
+void kdb_handle_morse_finish(struct edit_state *state) {
+    int j;
+    logf("Morse: 0x%02x", state.morse_code);
+    state->morse_reading = false;
+
+    for (j = 0; morse_alphabets[j] != '\0'; j++)
+    {
+        if (morse_codes[j] == state->morse_code)
+            break;
+    }
+
+    if (morse_alphabets[j] == '\0')
+    {
+        logf("Morse code not found");
+        return;
+    }
+
+    /* turn off hangul input */
+    state->hangul = false;
+    kbd_inschar(state, morse_alphabets[j]);
+}
+#endif /* HAVE_MORSE_INPUT */
