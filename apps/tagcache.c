@@ -4572,6 +4572,18 @@ static bool load_tagcache(void)
 
             if (idx_id != -1 || tag == tag_filename) /* filename NOT optional */
             {
+                if (idx->flag & FLAG_DELETED)
+                {
+                    /* seek over tag data instead of reading */
+                    if (lseek(fd, fe->tag_length, SEEK_CUR) < 0)
+                    {
+                        logf("read error #11.5");
+                        goto failure;
+                    }
+
+                    continue;
+                }
+
                 if (idx_id < 0 || idx_id >= tcmh.tch.entry_count)
                 {
                     logf("corrupt tagfile entry:tag=%d:idxid=%d", tag, idx_id);
