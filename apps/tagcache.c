@@ -369,6 +369,8 @@ static inline void tcrc_buffer_unlock(void)
     core_unpin(tcramcache.handle);
 }
 
+static void load_ramcache(void);
+
 #else /* ndef HAVE_TC_RAMCACHE */
 
 #define IF_TCRCDC(...)
@@ -3424,11 +3426,6 @@ static bool commit(void)
     remove_db_file(TAGCACHE_STATEFILE);
 #endif
 
-    /* At first be sure to unload the ramcache! */
-#ifdef HAVE_TC_RAMCACHE
-    tc_stat.ramcache = false;
-#endif
-
     /* Beyond here, jump to commit_error to undo locks and restore dircache */
     rc = false;
     read_lock++;
@@ -3453,6 +3450,8 @@ static bool commit(void)
         tempbuf_size = tc_stat.ramcache_allocated - sizeof(struct ramcache_header) - 128;
         tempbuf_size &= ~0x03;
         ramcache_buffer_stolen = true;
+        /* Invalidate the ramcache! */
+        tc_stat.ramcache = false;
     }
 #endif /* HAVE_TC_RAMCACHE */
 
@@ -3547,11 +3546,8 @@ static bool commit(void)
             tempbuf_size = 0;
             ramcache_buffer_stolen = false;
             tcrc_buffer_unlock();
+            load_ramcache();
         }
-
-        /* Reload tagcache. */
-        if (tc_stat.ramcache_allocated > 0)
-            tagcache_start_scan();
 #endif /* HAVE_TC_RAMCACHE */
 
         rc = true;
@@ -5205,7 +5201,7 @@ void tagcache_build(void)
 #endif /* __PCTOOL__ */
 
 #ifdef HAVE_TC_RAMCACHE
-static void load_ramcache(void)
+void load_ramcache(void)
 {
     if (!tcramcache.hdr)
         return ;
@@ -5497,6 +5493,7 @@ void tagcache_init(void)
     free_tempbuf();
     tc_stat.ready = check_all_headers();
 #endif
+    tagcache_start_scan();
 }
 
 #ifdef __PCTOOL__
