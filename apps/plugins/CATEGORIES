@@ -80,6 +80,7 @@ nim,games
 open_plugins,viewers
 oscilloscope,demos
 otp,apps
+haptic_setup,apps
 pacbox,games
 pdbox,viewers
 pegbox,games

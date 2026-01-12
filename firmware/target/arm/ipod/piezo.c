@@ -206,6 +206,6 @@ void piezo_button_beep(bool beep, bool force)
         if (beep)
             piezo_play_for_tick(40, 0x80, HZ/5);
         else
-            piezo_play_for_usec(91, 0x80, 4000);
+            piezo_play_for_usec(51, 0xE8, 3500);
     }
 }

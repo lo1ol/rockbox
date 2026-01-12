@@ -47,6 +47,7 @@ flipit.c
 shopper.c
 resistor.c
 otp.c
+haptic_setup.c
 windows_lnk.c
 
 #ifdef USB_ENABLE_HID
