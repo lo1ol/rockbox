@@ -696,6 +696,13 @@ void draw_album_art(struct gui_wps *gwps, int handle_id, bool clear)
 
     if (!clear)
     {
+        if (aa->filter &  WPS_ALBUMART_RED_FILTER) {
+            unsigned long size =bmp->width * bmp->height;
+            for (unsigned long i=0; i!=size; ++i) {
+                ((fb_data*)bmp->data)[i] &= 0xF800;
+            }
+        }
+
         /* Draw the bitmap */
         gwps->display->bitmap_part((fb_data*)bmp->data, 0, 0,
                                     STRIDE(gwps->display->screen_type,

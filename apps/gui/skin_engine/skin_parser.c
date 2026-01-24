@@ -1430,6 +1430,8 @@ static int parse_albumart_load(struct skin_element* element,
     aa->xalign = WPS_ALBUMART_ALIGN_CENTER; /* default */
     aa->yalign = WPS_ALBUMART_ALIGN_CENTER; /* default */
 
+    aa->filter=WPS_ALBUMART_NO_FILTER;
+
     aa->x = percent_parse_param(get_param(element, 0), curr_vp->vp.width);
     aa->y =  percent_parse_param(get_param(element, 1), curr_vp->vp.height);
     aa->width =  percent_parse_param(get_param(element, 2), curr_vp->vp.width);
@@ -1490,6 +1492,18 @@ static int parse_albumart_load(struct skin_element* element,
                 break;
             case 'b':
                 aa->yalign = WPS_ALBUMART_ALIGN_BOTTOM;
+                break;
+        }
+    }
+    if (element->params_count > 6 && !isdefault(get_param(element, 6)))
+    {
+        switch (tolower(*get_param_text(element, 6)))
+        {
+            case 'n':
+                aa->filter = WPS_ALBUMART_NO_FILTER;
+                break;
+            case 'r':
+                aa->filter = WPS_ALBUMART_RED_FILTER;
                 break;
         }
     }

@@ -267,6 +267,9 @@ struct playlistviewer {
 #define WPS_ALBUMART_ALIGN_TOP      1    /* y align:   top */
 #define WPS_ALBUMART_ALIGN_BOTTOM   4    /* y align:   bottom */
 
+#define WPS_ALBUMART_NO_FILTER      0
+#define WPS_ALBUMART_RED_FILTER     1
+
 struct skin_albumart {
     /* Album art support */
     int16_t x;
@@ -276,6 +279,7 @@ struct skin_albumart {
 
     unsigned char xalign; /* WPS_ALBUMART_ALIGN_LEFT, _CENTER, _RIGHT */
     unsigned char yalign; /* WPS_ALBUMART_ALIGN_TOP, _CENTER, _BOTTOM */
+    unsigned filter;
     unsigned char state; /* WPS_ALBUMART_NONE, _CHECK, _LOAD */
 
     int draw_handle;
