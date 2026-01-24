@@ -201,7 +201,7 @@ static const struct tag_info legal_tags[] =
     TAG(SKIN_TOKEN_DRAW_INBUILTBAR,       "wi", "", SKIN_REFRESH_STATIC|NOBREAK),
 
     TAG(SKIN_TOKEN_LOAD_FONT,             "Fl" , "IF|I", 0|NOBREAK),
-    TAG(SKIN_TOKEN_ALBUMART_LOAD,         "Cl" , "[iP][iP][iP][iP]|ss", 0|NOBREAK),
+    TAG(SKIN_TOKEN_ALBUMART_LOAD,         "Cl" , "[iP][iP][iP][iP]|sss", 0|NOBREAK),
     TAG(SKIN_TOKEN_ALBUMART_DISPLAY,      "Cd" , "", SKIN_REFRESH_STATIC),
     TAG(SKIN_TOKEN_ALBUMART_FOUND,        "C" , "", SKIN_REFRESH_STATIC),
 
