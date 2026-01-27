@@ -842,6 +842,8 @@ int do_shortcut_menu(void *ignored)
             default:
                 break;
         }
+
+        break;
     }
     if (GO_TO_PLUGIN == done)
         pop_current_activity_without_refresh();
