@@ -42,6 +42,7 @@ struct entry {
 #define BROWSE_SELECTONLY       0x0001  /* exit on selecting a file */
 #define BROWSE_NO_CONTEXT_MENU  0x0002  /* disable context menu */
 #define BROWSE_RUNFILE          0x0004  /* do ft_open() on the file instead of browsing */
+#define BROWSE_ROOT_ONLY        0x0008  /* not brawse beyond root folder */
 #define BROWSE_DIRFILTER        0x0080  /* override global_settings.dirfilter with browse_context.dirfilter */
 #define BROWSE_SELECTED         0x0100  /* this bit is set if user selected item */
 
@@ -87,6 +88,7 @@ struct tree_context {
     int selected_item_history[MAX_DIR_LEVELS];
 
     int *dirfilter; /* file use */
+    bool root_only; /* browse only inside root dir */
     int filesindir; /* The number of files in the dircache */
     int dirsindir; /* file use */
     int dirlength; /* total number of entries in dir, incl. those not loaded */

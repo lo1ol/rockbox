@@ -822,7 +822,7 @@ static int dirbrowse(void)
 
             case ACTION_STD_CANCEL:
                 exit_to_new_screen(0);
-                if (*tc.dirfilter > NUM_FILTER_MODES && tc.dirlevel < 1) {
+                if (tc.root_only && tc.dirlevel < 1) {
                     exit_func = true;
                     break;
                 }
@@ -1108,6 +1108,7 @@ int rockbox_browse(struct browse_context *browse)
     backup_count++;
     int *prev_dirfilter = tc.dirfilter;
     tc.dirfilter = &dirfilter;
+    tc.root_only = false;
     tc.sort_dir = global_settings.sort_dir;
 
     reload_dir = true;
@@ -1129,6 +1130,7 @@ int rockbox_browse(struct browse_context *browse)
             if (tc.browse != browse ||
                 !(tc.currdir[1] && strstr(tc.currdir, browse->root) != NULL))
             {
+                tc.root_only = true;
                 tc.browse = browse;
                 tc.selected_item = 0;
                 tc.dirlevel = 0;
@@ -1155,6 +1157,12 @@ int rockbox_browse(struct browse_context *browse)
                 tc.dirfilter = &global_settings.dirfilter;
             tc.browse = browse;
             set_current_file(browse->root);
+
+            if (browse->flags & BROWSE_ROOT_ONLY) {
+                tc.root_only = true;
+                tc.dirlevel = 0;
+            }
+
             if (browse->flags&BROWSE_RUNFILE)
                 ret_val = ft_enter(&tc);
             else
