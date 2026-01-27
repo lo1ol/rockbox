@@ -735,8 +735,10 @@ int do_shortcut_menu(void *ignored)
        Playing talk files or other I/O actions call yield() */
     ++buflib_move_lock;
 
-    while (done == GO_TO_PREVIOUS)
+    while (true)
     {
+        bool need_close = true;
+
         list.count = shortcut_count; /* in case shortcut was deleted */
         list.title = P2STR(ID2P(LANG_SHORTCUTS)); /* in case language changed */
         list.get_icon = global_settings.show_icons ? shortcut_menu_get_icon : NULL;
@@ -786,10 +788,14 @@ int do_shortcut_menu(void *ignored)
                     .dirfilter = SHOW_ALL, /* ignored for SHORTCUT_BROWSER */
                     .icon = Icon_NOICON,
                     .root = sc->u.path,
+                    .flags = BROWSE_ROOT_ONLY,
                 };
                 if (sc->type == SHORTCUT_FILE)
                     browse.flags = BROWSE_RUNFILE | BROWSE_DIRFILTER;
                 done = rockbox_browse(&browse);
+
+                if (done == GO_TO_PREVIOUS && sc->type == SHORTCUT_BROWSER)
+                    need_close = false;
                 break;
             case SHORTCUT_SETTING_APPLY:;
                 bool theme_changed;
@@ -798,7 +804,7 @@ int do_shortcut_menu(void *ignored)
                 apply_new_setting(sc->setting);
                 break;
             case SHORTCUT_SETTING:
-                do_setting_screen(sc->setting, sc->name[0] ?
+                need_close = do_setting_screen(sc->setting, sc->name[0] ?
                                   sc->name : P2STR(ID2P(sc->setting->lang_id)),
                                   NULL);
                 apply_new_setting(sc->setting);
@@ -843,7 +849,8 @@ int do_shortcut_menu(void *ignored)
                 break;
         }
 
-        break;
+        if (need_close)
+            break;
     }
     if (GO_TO_PLUGIN == done)
         pop_current_activity_without_refresh();
