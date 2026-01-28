@@ -319,6 +319,8 @@ void sound_set_volume(int value)
         value = max_vol;
     if (value > global_settings.volume_limit)
         value = global_settings.volume_limit;
+    if (!headphones_inserted() && value > -57)
+        value = -57;
 
     global_status.volume = value;
 #endif

@@ -578,6 +578,15 @@ static void hp_unplug_change(bool inserted)
 {
     static bool headphone_caused_pause = true;
 
+    if (inserted) {
+        global_status.last_unplugged_volume = global_status.volume;
+        global_status.volume = global_status.last_plugged_volume;
+    } else {
+        global_status.last_plugged_volume = global_status.volume;
+        global_status.volume = global_status.last_unplugged_volume;
+    }
+    setvol();
+
     if (global_settings.unplug_mode)
     {
         int audio_stat = audio_status();
