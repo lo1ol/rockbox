@@ -342,6 +342,8 @@ const char* setting_get_cfgvals(const struct settings_list *setting);
 struct system_status
 {
     int volume;     /* audio output volume in decibels range depends on the dac */
+    int last_plugged_volume;
+    int last_unplugged_volume;
     int resume_index;  /* index in playlist (-1 for no active resume) */
     uint32_t resume_crc32; /* crc32 of the name of the file */
     uint32_t resume_elapsed; /* elapsed time in last file */

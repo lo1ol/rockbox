@@ -568,9 +568,23 @@ void car_adapter_mode_init(void)
 #endif
 
 #ifdef HAVE_HEADPHONE_DETECTION
+
+static bool hp_is_plugged;
+
 static void hp_unplug_change(bool inserted)
 {
+    hp_is_plugged = inserted;
+
     static bool headphone_caused_pause = true;
+
+    if (inserted) {
+        global_status.last_unplugged_volume = global_status.volume;
+        global_status.volume = global_status.last_plugged_volume;
+    } else {
+        global_status.last_plugged_volume = global_status.volume;
+        global_status.volume = global_status.last_unplugged_volume;
+    }
+    setvol();
 
     if (global_settings.unplug_mode)
     {
@@ -878,6 +892,8 @@ void setvol(void)
         volume = max_vol;
     if (volume > global_settings.volume_limit)
         volume = global_settings.volume_limit;
+    if (!hp_is_plugged && volume > -57)
+        volume = -57;
 
     sound_set_volume(volume);
     global_status.last_volume_change = current_tick;
