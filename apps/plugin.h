@@ -905,7 +905,7 @@ struct plugin_api {
     int (*settings_save)(void);
     bool (*option_screen)(const struct settings_list *setting,
                           struct viewport parent[NB_SCREENS],
-                          bool use_temp_var, const unsigned char* option_title);
+                          bool use_temp_var, const unsigned char* option_title, bool* canceled);
     bool (*set_option)(const char* string, const void* variable,
                        enum optiontype type, const struct opt_items* options,
                        int numoptions, void (*function)(int));

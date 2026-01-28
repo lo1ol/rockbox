@@ -477,8 +477,11 @@ static void val_to_selection(const struct settings_list *setting, int oldvalue,
 
 bool option_screen(const struct settings_list *setting,
                    struct viewport parent[NB_SCREENS],
-                   bool use_temp_var, const unsigned char* option_title)
+                   bool use_temp_var, const unsigned char* option_title, bool* canceled)
 {
+    if (canceled)
+        *canceled = false;
+
     int action;
     bool done = false;
     struct gui_synclist lists;
@@ -554,6 +557,9 @@ bool option_screen(const struct settings_list *setting,
                     *(bool*)setting->setting = (oldvalue==1);
                 splash(HZ/2, ID2P(LANG_CANCEL));
             }
+
+            if (canceled)
+                *canceled = true;
             done = true;
         }
         else if (action == ACTION_STD_CONTEXT)

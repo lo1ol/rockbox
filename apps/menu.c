@@ -335,7 +335,7 @@ static int talk_menu_item(int selected_item, void *data)
         return 0;
 }
 
-void do_setting_screen(const struct settings_list *setting, const char * title,
+bool do_setting_screen(const struct settings_list *setting, const char * title,
                         struct viewport parent[NB_SCREENS])
 {
     char padded_title[MAX_PATH];
@@ -359,8 +359,11 @@ void do_setting_screen(const struct settings_list *setting, const char * title,
         title = padded_title;
     }
 
+    bool canceled;
     option_screen((struct settings_list *)setting, parent,
-                  setting->flags&F_TEMPVAR, (char*)title);
+                  setting->flags&F_TEMPVAR, (char*)title, &canceled);
+
+    return !canceled;
 }
 
 

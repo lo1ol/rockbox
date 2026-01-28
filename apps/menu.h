@@ -115,7 +115,7 @@ typedef int (*menu_callback_type)(int action,
                                   struct gui_synclist *this_list);
 void do_setting_from_menu(const struct menu_item_ex *temp,
                           struct viewport parent[NB_SCREENS]);
-void do_setting_screen(const struct settings_list *setting, const char * title,
+bool do_setting_screen(const struct settings_list *setting, const char * title,
                         struct viewport parent[NB_SCREENS]);
 
 /* 

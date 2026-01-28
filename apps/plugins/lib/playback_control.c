@@ -66,14 +66,14 @@ static bool volume(void)
 {
     const struct settings_list* vol = 
         rb->find_setting(&rb->global_status->volume);
-    return rb->option_screen((struct settings_list*)vol, parentvp, false, "Volume");
+    return rb->option_screen((struct settings_list*)vol, parentvp, false, "Volume", NULL);
 }
 
 static bool shuffle(void)
 {
     const struct settings_list* shuffle = 
         rb->find_setting(&rb->global_settings->playlist_shuffle);
-    return rb->option_screen((struct settings_list*)shuffle, parentvp, false, "Shuffle");
+    return rb->option_screen((struct settings_list*)shuffle, parentvp, false, "Shuffle", NULL);
 }
 
 static bool repeat_mode(void)
@@ -82,7 +82,7 @@ static bool repeat_mode(void)
         rb->find_setting(&rb->global_settings->repeat_mode);
     int old_repeat = rb->global_settings->repeat_mode;
   
-    rb->option_screen((struct settings_list*)repeat, parentvp, false, "Repeat");
+    rb->option_screen((struct settings_list*)repeat, parentvp, false, "Repeat", NULL);
   
     if (old_repeat != rb->global_settings->repeat_mode &&
         (rb->audio_status() & AUDIO_STATUS_PLAY))

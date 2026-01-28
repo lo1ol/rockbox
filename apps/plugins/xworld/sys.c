@@ -287,7 +287,7 @@ static void do_sound_settings(struct System* sys)
         {
             const struct settings_list* vol =
                 rb->find_setting(&rb->global_status->volume);
-            rb->option_screen((struct settings_list*)vol, NULL, false, "Volume");
+            rb->option_screen((struct settings_list*)vol, NULL, false, "Volume", NULL);
             break;
         }
         case 3:

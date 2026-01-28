@@ -217,7 +217,7 @@ static int eq_do_simple_menu(void * param)
         pcmbuf_set_low_latency(true);
         setting.setting = &global_settings.eq_band_settings[info.selection].gain;
         option_screen(&setting, NULL, false,
-                gainitem_get_name(info.selection, NULL, title, MAX_PATH));
+                gainitem_get_name(info.selection, NULL, title, MAX_PATH), NULL);
         eq_apply();
         pcmbuf_set_low_latency(false);
     }
@@ -421,7 +421,7 @@ static int eq_do_advanced_menu(void * param)
         pcmbuf_set_low_latency(true);
         advancedmenu_item_get_name(info.selection, &selected_band, title, MAX_PATH);
 
-        option_screen(&setting, NULL, false, title[0] == '\t' ? &title[1] : title);
+        option_screen(&setting, NULL, false, title[0] == '\t' ? &title[1] : title, NULL);
         eq_apply();
         pcmbuf_set_low_latency(false);
     }

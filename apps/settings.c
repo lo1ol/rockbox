@@ -1290,7 +1290,7 @@ bool set_int_ex(const unsigned char* string,
     item.flags = F_INT_SETTING|F_T_INT;
     item.lang_id = -1;
     item.setting = (void *)variable;
-    return option_screen(&item, NULL, false, string);
+    return option_screen(&item, NULL, false, string, NULL);
 }
 
 
@@ -1332,7 +1332,7 @@ bool set_option(const char* string, const void* variable, enum optiontype type,
         temp = *(bool*)variable? 1: 0;
     else
         temp = *(int*)variable;
-    if (!option_screen(&item, NULL, false, string))
+    if (!option_screen(&item, NULL, false, string, NULL))
     {
         if (type == RB_BOOL)
 
