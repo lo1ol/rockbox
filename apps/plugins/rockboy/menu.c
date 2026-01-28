@@ -449,7 +449,7 @@ static void do_opt_menu(void)
                 if(options.sound) sound_dirty();
                 break;
             case 3: /* Volume */
-                rb->option_screen((struct settings_list*)vol, parentvp, false, "Volume");
+                rb->option_screen((struct settings_list*)vol, parentvp, false, "Volume", NULL);
                 break;
             case 4: /* Stats */
                 rb->set_option("Stats", &options.showstats, RB_INT, stats, 3, NULL );
