@@ -379,13 +379,18 @@ void gui_synclist_select_item(struct gui_synclist * gui_list, int item_number)
 static void gui_list_select_at_offset(struct gui_synclist * gui_list,
                                       int offset, bool allow_wrap)
 {
+    bool triedAgain = false;
+    int new_selection;
+    int remain;
+
     if (gui_list->selected_size > 1)
     {
         offset *= gui_list->selected_size;
     }
+try_again:
 
-    int new_selection = gui_list->selected_item + offset;
-    int remain = (gui_list->nb_items - gui_list->selected_size);
+    new_selection = gui_list->selected_item + offset;
+    remain = (gui_list->nb_items - gui_list->selected_size);
 
     if (new_selection >= gui_list->nb_items)
     {
@@ -396,6 +401,22 @@ static void gui_list_select_at_offset(struct gui_synclist * gui_list,
     {
         new_selection = allow_wrap ? remain : 0;
         edge_beep(gui_list, allow_wrap);
+    }
+
+    if (!triedAgain) {
+        triedAgain = true;
+        char buffer[SIMPLELIST_MAX_LINELENGTH];
+        const char* item_name = gui_list->callback_get_item_name(new_selection, gui_list->data, buffer, sizeof(buffer));
+
+        item_name = P2STR((const unsigned char*) item_name);
+        if (!item_name || !item_name[0]) {
+            if (offset > 0)
+                ++offset;
+            else
+                --offset;
+
+            goto try_again;
+        }
     }
 
     gui_synclist_select_item(gui_list, new_selection);
