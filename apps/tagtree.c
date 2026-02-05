@@ -371,6 +371,7 @@ static int get_tag(int *tag)
         TAG_MATCH("==>", menu_load) \
         TAG_MATCH("year", tag_year) \
         TAG_MATCH("album", tag_album) \
+        TAG_MATCH("yearalbum", tag_yearalbum) \
         TAG_MATCH("genre", tag_genre) \
         TAG_MATCH("title", tag_title) \
         TAG_MATCH("%sort", var_sorttype) \
@@ -907,6 +908,33 @@ static bool parse_search(struct menu_entry *entry, const char *str)
     }
 
     return true;
+}
+
+int get_year(const char *str) {
+    size_t len = strlen(str);
+    if (len < 7) return -1;
+
+    const char *ptr = str + (len - 7);
+    if (ptr[0] == ' ' && ptr[1] == '(' && ptr[6] == ')' &&
+        isdigit(ptr[2]) && isdigit(ptr[3]) &&
+        isdigit(ptr[4]) && isdigit(ptr[5])) {
+        return atoi(ptr + 2);
+    }
+    return -1;
+}
+
+static int compare_yearalbum(const void *p1, const void *p2)
+{
+    const char *name1 = ((struct tagentry *)p1)->name;
+    const char *name2 = ((struct tagentry *)p2)->name;
+
+    int year1 = get_year(name1);
+    int year2 = get_year(name2);
+
+    if (year1 != year2)
+        return year1 > year2 ? 1 : -1;
+
+    return qsort_fn(name1, name2, MAX_PATH);
 }
 
 static int compare(const void *p1, const void *p2)
@@ -1537,6 +1565,7 @@ static int format_str(struct tagcache_search *tcs, struct display_format *fmt,
 
                         result = tmpbuf;
                     }
+
                     buf_pos +=
                         snprintf(&buf[buf_pos], space_left, fmtbuf, result);
                     break;
@@ -1916,12 +1945,20 @@ entry_skip_formatter:
         else
             qsort_fn = sort_inverse ? strncasecmp_inv : strncasecmp;
 
+
+        int (*compare_fn)(const void*, const void*);
+        if (c->currtable == TABLE_ALLSUBENTRIES_SORTED_BY_ALBUMS)
+            compare_fn = compare_with_albums;
+        else if (tag == tag_yearalbum)
+            compare_fn = compare_yearalbum;
+        else
+            compare_fn = compare;
+
         struct tagentry *entries = get_entries(c);
         qsort(&entries[c->special_entry_count],
               current_entry_count - c->special_entry_count,
               sizeof(struct tagentry),
-              c->currtable == TABLE_ALLSUBENTRIES_SORTED_BY_ALBUMS ? compare_with_albums : compare
-        );
+              compare_fn);
     }
 
     if (!init)

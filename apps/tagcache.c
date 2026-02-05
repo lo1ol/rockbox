@@ -112,7 +112,7 @@
 #define IDX_BUF_DEPTH 64
 
 /* Tag Cache Header version 'TCHxx'. Increment when changing internal structures. */
-#define TAGCACHE_MAGIC  0x54434810
+#define TAGCACHE_MAGIC  0x54434811
 
 /* Dump store/restore header version 'TCSxx'. */
 #define TAGCACHE_STATEFILE_MAGIC 0x54435301
@@ -202,18 +202,20 @@ static int tempbuf_handle;
     (BIT_N(tag) & (TAGCACHE_NUMERIC_TAGS | ~TAGCACHE_UNIQUE_TAGS))
 /* Tags we want to get sorted (loaded to the tempbuf). */
 #define TAGCACHE_SORTED_TAGS ((1LU << tag_artist) | (1LU << tag_album) | \
+    (1LU << tag_yearalbum ) | \
     (1LU << tag_genre) | (1LU << tag_composer) | (1LU << tag_comment) | \
     (1LU << tag_albumartist) | (1LU << tag_grouping) | (1LU << tag_title) | \
     (1LU << tag_virt_canonicalartist))
 
 /* Uniqued tags (we can use these tags with filters and conditional clauses). */
 #define TAGCACHE_UNIQUE_TAGS ((1LU << tag_artist) | (1LU << tag_album) | \
+    (1LU << tag_yearalbum ) | \
     (1LU << tag_genre) | (1LU << tag_composer) | (1LU << tag_comment) | \
     (1LU << tag_albumartist) | (1LU << tag_grouping) | \
     (1LU << tag_virt_canonicalartist))
 
 /* String presentation of the tags defined in tagcache.h. Must be in correct order! */
-static const char * const tags_str[] = { "artist", "album", "genre", "title",
+static const char * const tags_str[] = { "artist", "album", "yearalbum", "genre", "title",
     "filename", "composer", "comment", "albumartist", "grouping", "year",
     "discnumber", "tracknumber", "canonicalartist", "bitrate", "length",
     "playcount", "rating", "playtime", "lastplayed", "commitid", "mtime",
@@ -2275,6 +2277,7 @@ static void NO_INLINE add_tagcache(char *path, unsigned long mtime)
     int path_length = strlen(path);
     bool has_artist;
     bool has_grouping;
+    char *yearalbum, buf[MAX_PATH];
 
     DB_LOG("file", path);
 
@@ -2369,10 +2372,18 @@ static void NO_INLINE add_tagcache(char *path, unsigned long mtime)
     has_grouping = id3.grouping != NULL
         && strlen(id3.grouping) > 0;
 
+    if (id3.album != NULL && id3.year > 0) {
+        snprintf(buf, sizeof buf, "%s (%d)", id3.album, id3.year);
+        yearalbum = buf;
+    } else {
+        yearalbum = id3.album;
+    }
+
     ADD_TAG(entry, tag_filename, &path);
     ADD_TAG(entry, tag_title, &id3.title);
     ADD_TAG(entry, tag_artist, &id3.artist);
     ADD_TAG(entry, tag_album, &id3.album);
+    ADD_TAG(entry, tag_yearalbum, &yearalbum);
     ADD_TAG(entry, tag_genre, &id3.genre_string);
     ADD_TAG(entry, tag_composer, &id3.composer);
     ADD_TAG(entry, tag_comment, &id3.comment);
@@ -2403,6 +2414,7 @@ static void NO_INLINE add_tagcache(char *path, unsigned long mtime)
     write_item(id3.title);
     write_item(id3.artist);
     write_item(id3.album);
+    write_item(yearalbum);
     write_item(id3.genre_string);
     write_item(id3.composer);
     write_item(id3.comment);
