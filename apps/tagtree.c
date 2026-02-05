@@ -372,6 +372,7 @@ static int get_tag(int *tag)
         TAG_MATCH("==>", menu_load) \
         TAG_MATCH("year", tag_year) \
         TAG_MATCH("album", tag_album) \
+        TAG_MATCH("yearalbum", tag_yearalbum) \
         TAG_MATCH("genre", tag_genre) \
         TAG_MATCH("title", tag_title) \
         TAG_MATCH("%sort", var_sorttype) \
@@ -908,6 +909,55 @@ static bool parse_search(struct menu_entry *entry, const char *str)
     }
 
     return true;
+}
+
+int ends_with(const char *str, size_t str_len, const char *suffix) {
+    size_t suffix_len = strlen(suffix);
+    if (str_len < suffix_len) return 0;
+    return strcmp(str + (str_len - suffix_len), suffix) == 0;
+}
+
+int get_year(const char *str, size_t len) {
+    if (len < 7) return -1;
+    
+    const char *ptr = str + (len - 7);
+    if (ptr[0] == ' ' && ptr[1] == '(' && ptr[6] == ')' &&
+        isdigit(ptr[2]) && isdigit(ptr[3]) && 
+        isdigit(ptr[4]) && isdigit(ptr[5])) {
+        return atoi(ptr + 2);
+    }
+    return -1;
+}
+
+static int compare_yearalbum(const void *p1, const void *p2)
+{
+    struct tagentry *e1 = (struct tagentry *)p1;
+    struct tagentry *e2 = (struct tagentry *)p2;
+
+    size_t len1 = strlen(e1->name);
+    size_t len2 = strlen(e2->name);
+
+    int is_single1 = ends_with(e1->name, len1, "- Singles");
+    int is_single2 = ends_with(e2->name, len2, "- Singles");
+
+    if (is_single2 && is_single1)
+        return qsort_fn(e1->name, e2->name, MAX_PATH);
+    if (is_single1 && !is_single2)
+        return 1;
+    if (is_single2 && !is_single1)
+        return -1;
+
+    int year1 = get_year(e1->name, len1);
+    int year2 = get_year(e2->name, len2);
+
+    printf("kek %s %s\n", e1->name, e2->name);
+
+    if (year1 > year2)
+        return 1;
+    if (year1 < year2)
+        return -1;
+
+    return qsort_fn(e1->name, e2->name, MAX_PATH);
 }
 
 static int compare(const void *p1, const void *p2)
@@ -1538,6 +1588,7 @@ static int format_str(struct tagcache_search *tcs, struct display_format *fmt,
 
                         result = tmpbuf;
                     }
+
                     buf_pos +=
                         snprintf(&buf[buf_pos], space_left, fmtbuf, result);
                     break;
@@ -1917,12 +1968,20 @@ entry_skip_formatter:
         else
             qsort_fn = sort_inverse ? strncasecmp_inv : strncasecmp;
 
+
+        int (*compare_fn)(const void*, const void*);
+        if (c->currtable == TABLE_ALLSUBENTRIES_SORTED_BY_ALBUMS)
+            compare_fn = compare_with_albums;
+        else if (tag == tag_yearalbum)
+            compare_fn = compare_yearalbum;
+        else 
+            compare_fn = compare;
+
         struct tagentry *entries = get_entries(c);
         qsort(&entries[c->special_entry_count],
               current_entry_count - c->special_entry_count,
               sizeof(struct tagentry),
-              c->currtable == TABLE_ALLSUBENTRIES_SORTED_BY_ALBUMS ? compare_with_albums : compare
-        );
+              compare_fn);
     }
 
     if (!init)
