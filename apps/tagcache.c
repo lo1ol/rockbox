@@ -4982,6 +4982,10 @@ static bool check_dir(const char *dirname, int add_files)
             break;
         }
 
+        // ignore any dot dir
+        if (entry->d_name[0] == '.')
+            continue;
+
         if (is_dotdir_name(entry->d_name))
             continue;
 
