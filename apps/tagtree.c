@@ -1779,8 +1779,13 @@ static int retrieve_entries(struct tree_context *c, int offset, bool init)
             total_count++;
     }
 
+    int suggested_first_item = -1;
+
     while (tagcache_get_next(&tcs, tcs_buf, tcs_bufsz))
     {
+        if (suggested_first_item == -1)
+            suggested_first_item = total_count;
+
         if (total_count++ < offset)
             continue;
 
@@ -1819,6 +1824,8 @@ static int retrieve_entries(struct tree_context *c, int offset, bool init)
 
         if (strcmp(tcs.result, UNTAGGED) == 0)
         {
+            ++suggested_first_item;
+
             if (tag == tag_title && tcs.type == tag_title && tcs.filter_count <= 1)
             { /* Fallback to basename */
                 char *lastname = dptr->name;
@@ -1937,6 +1944,9 @@ entry_skip_formatter:
             }
         }
     }
+
+    if (suggested_first_item != -1 && max_history_level <= c->dirlevel)
+        tc->selected_item = suggested_first_item;
 
     if (sort)
     {
