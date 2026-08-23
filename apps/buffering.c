@@ -19,6 +19,7 @@
  ****************************************************************************/
 #include "config.h"
 #include <string.h>
+#include <stdio.h>
 #include "system.h"
 #include "storage.h"
 #include "thread.h"
@@ -29,6 +30,8 @@
 #include "appevents.h"
 #include "metadata.h"
 #include "bmp.h"
+#include "crc32.h"
+#include "dir.h"
 #ifdef HAVE_ALBUMART
 #include "albumart.h"
 #include "jpeg_load.h"
@@ -840,6 +843,139 @@ static bool fill_buffer(void)
 }
 
 #ifdef HAVE_ALBUMART
+
+/* Calculate hash only over beginning of image
+ * It makes hashing faster.
+ * Chance of collision is pretty low */
+#define HASHED_IMG_SIZE (1024L * 512)
+
+#define BAD_HASH ((uint32_t)-1)
+
+#define min(x, y) ((x) < (y) ? (x) : (y))
+
+static uint32_t get_hash(int fd, struct bufopen_bitmap_data *data,
+                         void* buf, size_t buf_size)
+{
+    struct mp3_albumart *aa = data->embedded_albumart;
+    off_t cur_pos = lseek(fd, 0, SEEK_CUR);
+    size_t size;
+
+    if (aa)
+        size = aa->size;
+    else
+        size = filesize(fd);
+
+    uint32_t hash = 0xFFFFFFFF;
+    /* hash target dim */
+    hash = crc_32(data->dim, sizeof(*data->dim), hash);
+    /* hash file size */
+    hash = crc_32(&size, sizeof(size), hash);
+
+    /* hash beginning of file */
+    size_t remaining = min(HASHED_IMG_SIZE, size);
+
+    while(remaining > 0) {
+        size_t chunk_size = min(remaining, buf_size);
+        ssize_t rc = read(fd, buf, chunk_size);
+        if (rc <= 0) {
+            hash = BAD_HASH;
+            break;
+        }
+
+        hash = crc_32(buf, rc, hash);
+        remaining -= rc;
+    }
+
+    lseek(fd, cur_pos, SEEK_SET);
+    return hash;
+}
+
+#define IMG_CACHE_DIR "/.rockbox/img_cache"
+
+/* Shard cache files across 256 subdirectories
+ * to avoid huge flat directories on FAT. */
+static void get_cache_path(uint32_t hash, char* path, const size_t size)
+{
+    int off = 0;
+    off += snprintf(path + off, size - off, "%s", IMG_CACHE_DIR);
+    off += snprintf(path + off, size - off, "/%02x", (unsigned)(hash & 0xFF));
+    off += snprintf(path + off, size - off, "/%06lx", (unsigned long)(hash >> 8));
+}
+
+static void mkdir_shard(uint32_t hash)
+{
+    char path[MAX_PATH];
+    const size_t size = sizeof(path);
+    int off = 0;
+    off += snprintf(path + off, size - off, "%s", IMG_CACHE_DIR);
+    mkdir(path);
+    off += snprintf(path + off, size - off, "/%02x", (unsigned)(hash & 0xFF));
+    mkdir(path);
+}
+
+static int get_cached_img(uint32_t hash, struct bitmap *bmp, size_t max_size)
+{
+    int rc;
+    char path[MAX_PATH];
+
+    get_cache_path(hash, path, sizeof(path));
+
+    int fd = open(path, O_RDONLY);
+    if (fd < 0)
+        return ERR_FILE_ERROR;
+
+    size_t bmp_size = filesize(fd);
+    size_t remaining = bmp_size;
+
+    if (bmp_size > max_size) {
+        rc = -1;
+        goto end;
+    }
+
+    while(remaining > 0) {
+        rc = read(fd, bmp->data + bmp_size - remaining, remaining);
+        if (rc <= 0)
+            goto end;
+
+        remaining -= rc;
+    }
+
+    rc = bmp_size;
+
+end:
+    close(fd);
+    return rc;
+}
+
+static void save_cached_img(uint32_t hash, struct bitmap *bmp, int bmp_size)
+{
+    int rc = -1;
+    char path[MAX_PATH];
+
+    mkdir_shard(hash);
+    get_cache_path(hash, path, sizeof(path));
+
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC);
+    if (fd < 0)
+        return;
+
+    int remaining = bmp_size;
+
+    while(remaining > 0) {
+        rc = write(fd, bmp->data + bmp_size - remaining, remaining);
+        if (rc <= 0)
+            goto end;
+
+        remaining -= rc;
+    }
+
+end:
+    close(fd);
+
+    if (rc <= 0)
+        remove(path);
+}
+
 /* Given a file descriptor to a bitmap file, write the bitmap data to the
    buffer, with a struct bitmap and the actual data immediately following.
    Return value is the total size (struct + data). */
@@ -848,8 +984,13 @@ static int load_image(int fd, const char *path,
                       size_t bufidx, size_t max_size)
 {
     (void)path;
+
+    if (max_size <= sizeof(struct bitmap))
+        return -1;
+
     int rc;
     struct bitmap *bmp = ringbuf_ptr(bufidx);
+    max_size -= sizeof(struct bitmap);
     struct dim *dim = data->dim;
     struct mp3_albumart *aa = data->embedded_albumart;
 
@@ -863,9 +1004,19 @@ static int load_image(int fd, const char *path,
 #endif
     const int format = FORMAT_NATIVE | FORMAT_DITHER |
                        FORMAT_RESIZE | FORMAT_KEEP_ASPECT;
+
+    if (aa)
+        lseek(fd, aa->pos, SEEK_SET);
+
+    uint32_t hash = get_hash(fd, data, bmp->data, max_size);
+    if (hash != BAD_HASH) {
+        rc = get_cached_img(hash, bmp, max_size);
+        if (rc > 0)
+            return rc + sizeof(struct bitmap);
+    }
+
 #ifdef HAVE_JPEG
     if (aa != NULL) {
-        lseek(fd, aa->pos, SEEK_SET);
         rc = clip_jpeg_fd(fd, aa->type, aa->size, bmp, (int)max_size, format, NULL);
     }
     else if (strcmp(path + strlen(path) - 4, ".bmp"))
@@ -873,6 +1024,9 @@ static int load_image(int fd, const char *path,
     else
 #endif
         rc = read_bmp_fd(fd, bmp, (int)max_size, format, NULL);
+
+    if (hash != BAD_HASH && rc > 0)
+        save_cached_img(hash, bmp, rc);
 
     return rc + (rc > 0 ? sizeof(struct bitmap) : 0);
 }
